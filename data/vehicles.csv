@@ -1,0 +1,7 @@
+﻿vehicle_id,vehicle_type,plate_no,current_location,status,assigned_to,purpose,last_update
+T01,Tipper Truck,SG1234A,Site A,In Use,Eng Lim,Soil disposal,2/1/2026 10:30
+P01,Pick Up Lorry,SG5678B,Depot,Available,,,
+M01,Machinery,EXC-01,Site B,In Use,Eng Tan,Excavation,2/1/2026 9:00
+T02,Tipper Truck,SG1235A,Site A,In Use,Eng Lim,Soil disposal,2/1/2026 10:30
+P02,Pick Up Lorry,SG5679B,Depot,Available,,,
+M02,Machinery,EXC-02,Site B,In Use,Eng Tan,Excavation,2/1/2026 9:00
