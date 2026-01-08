@@ -11,18 +11,17 @@ from datetime import datetime
 import pytz
 
 # -------------------------
-# Page config
+# PAGE CONFIG
 # -------------------------
 st.set_page_config(
     page_title="Pick-up Lorry Dashboard",
     page_icon="🚐",
     layout="wide"
 )
-
-st.title("🚐 Pick-up Lorry Availability & Whereabout")
+st.title("🚐 Pick-up Lorry Dashboard")
 
 # -------------------------
-# Database helpers
+# DATABASE PATH
 # -------------------------
 DB_PATH = "data/pickup.db"
 
@@ -41,37 +40,74 @@ def save_data(df):
     conn.close()
 
 # -------------------------
-# Timezone (Singapore)
+# TIME (Singapore)
 # -------------------------
 SG_TZ = pytz.timezone("Asia/Singapore")
 now_dt = datetime.now(SG_TZ)
-now_str = now_dt.strftime("%H:%M")  # HH:MM string for comparison
+now_str = now_dt.strftime("%H:%M")  # HH:MM string
 
 st.caption(f"🕒 Current Time (SG): **{now_str}**")
 
 # -------------------------
-# Load data
+# 1️⃣ UPLOAD DAILY SCHEDULE
+# -------------------------
+st.subheader("📤 Upload Today's Schedule (CSV)")
+
+uploaded_file = st.file_uploader(
+    "Select CSV file",
+    type="csv",
+    help="Columns must include: vehicle_id, plate_no, driver, time_start, time_end, current_location, status, remarks"
+)
+
+if uploaded_file is not None:
+    try:
+        new_df = pd.read_csv(uploaded_file)
+
+        # Ensure required columns exist
+        required_cols = [
+            "vehicle_id", "plate_no", "driver",
+            "time_start", "time_end",
+            "current_location", "status",
+            "remarks", "last_updated"
+        ]
+        missing_cols = [c for c in required_cols if c not in new_df.columns]
+        if missing_cols:
+            st.error(f"Missing columns in CSV: {missing_cols}")
+        else:
+            # Normalize time
+            new_df["time_start"] = new_df["time_start"].astype(str).str.slice(0,5)
+            new_df["time_end"] = new_df["time_end"].astype(str).str.slice(0,5)
+
+            # Add last_updated
+            new_df["last_updated"] = now_dt.strftime("%Y-%m-%d %H:%M")
+
+            # Save to SQLite
+            save_data(new_df)
+
+            st.success("✅ Schedule uploaded and updated successfully!")
+
+    except Exception as e:
+        st.error(f"Failed to upload CSV: {e}")
+
+# -------------------------
+# LOAD CURRENT DATA
 # -------------------------
 df = load_data()
 
-# # Immediately after loading data from SQLite
-# df = load_data()
-
-# Normalize times to HH:MM
-df["time_start"] = df["time_start"].str.slice(0,5)
-df["time_end"] = df["time_end"].str.slice(0,5)
-
+# Normalize times in case of previous inconsistencies
+df["time_start"] = df["time_start"].astype(str).str.slice(0,5)
+df["time_end"] = df["time_end"].astype(str).str.slice(0,5)
 
 # -------------------------
-# DRIVER WHEREABOUT UPDATE
+# 2️⃣ DRIVER WHEREABOUT UPDATE
 # -------------------------
-st.subheader("📍 Driver Whereabout Update (Auto-Save)")
+st.subheader("📍 Driver Whereabout Update")
 
-vehicle = st.selectbox("Vehicle", df["vehicle_id"].unique())
+vehicle = st.selectbox("Select Vehicle", df["vehicle_id"].unique())
 
 vehicle_df = df[df["vehicle_id"] == vehicle].copy()
 
-# Find active slot or next slot
+# Find active slot or next
 active_slot = vehicle_df[
     (vehicle_df["time_start"] <= now_str) &
     (vehicle_df["time_end"] >= now_str)
@@ -83,7 +119,7 @@ if active_slot.empty:
 else:
     target_slot = active_slot
 
-# Pre-fill form fields
+# Pre-fill form
 location_default = target_slot["current_location"].values[0]
 status_default = target_slot["status"].values[0]
 remarks_default = target_slot["remarks"].values[0]
@@ -105,7 +141,6 @@ with st.form("driver_update"):
 
     submit = st.form_submit_button("Update Whereabout")
 
-# Save update
 if submit:
     idx = target_slot.index
     df.loc[idx, "current_location"] = location
@@ -115,11 +150,10 @@ if submit:
 
     save_data(df)
     df = load_data()  # reload updated data
-
-    st.success("✅ Whereabout updated successfully and reflected in schedule.")
+    st.success("✅ Whereabout updated successfully!")
 
 # -------------------------
-# AVAILABLE NOW
+# 3️⃣ AVAILABLE NOW
 # -------------------------
 st.subheader("🟢 Available Now")
 
@@ -142,7 +176,7 @@ else:
     )
 
 # -------------------------
-# TODAY'S SCHEDULE
+# 4️⃣ TODAY'S SCHEDULE
 # -------------------------
 st.subheader("📅 Today's Pick-up Lorry Schedule")
 
