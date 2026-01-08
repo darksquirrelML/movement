@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import streamlit as st
@@ -118,31 +118,32 @@ with st.form("driver_update"):
 
 
 if submit:
-    mask = (
-        (df["vehicle_id"] == vehicle) &
-        (df["time_start_dt"] <= now_time) &
-        (df["time_end_dt"] >= now_time)
-    )
+    now_str = now_dt.strftime("%H:%M")
 
-    if df[mask].empty:
-        st.error("❌ No active time slot found.")
+    vehicle_df = df[df["vehicle_id"] == vehicle].copy()
+
+    active_slot = vehicle_df[
+        (vehicle_df["time_start"] <= now_str) &
+        (vehicle_df["time_end"] >= now_str)
+    ]
+
+    if active_slot.empty:
+        upcoming = vehicle_df[vehicle_df["time_start"] > now_str].sort_values("time_start")
+        target_slot = upcoming.iloc[[0]] if not upcoming.empty else vehicle_df.iloc[[0]]
     else:
-        df.loc[mask, "current_location"] = location
-        df.loc[mask, "status"] = status
-        df.loc[mask, "remarks"] = remarks
-        df.loc[mask, "last_updated"] = now_dt.strftime("%Y-%m-%d %H:%M")
+        target_slot = active_slot
 
-        # Save to database
-        save_data(df)
+    idx = target_slot.index
 
-        # 🔁 RELOAD from database
-        df = load_data()
+    df.loc[idx, "current_location"] = location
+    df.loc[idx, "status"] = status
+    df.loc[idx, "remarks"] = remarks
+    df.loc[idx, "last_updated"] = now_dt.strftime("%Y-%m-%d %H:%M")
 
-        # Re-create time columns
-        df["time_start_dt"] = pd.to_datetime(df["time_start"], errors="coerce").dt.time
-        df["time_end_dt"] = pd.to_datetime(df["time_end"], errors="coerce").dt.time
+    save_data(df)
+    df = load_data()
 
-        st.success("✅ Whereabout updated and reflected in dashboard.")
+    st.success("✅ Whereabout updated successfully.")
 
 
 # -------------------------
