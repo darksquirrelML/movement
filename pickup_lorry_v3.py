@@ -98,6 +98,25 @@ with st.form("driver_update"):
 # -------------------------
 # SAVE UPDATE (Persistent)
 # -------------------------
+# if submit:
+#     mask = (
+#         (df["vehicle_id"] == vehicle) &
+#         (df["time_start_dt"] <= now_time) &
+#         (df["time_end_dt"] >= now_time)
+#     )
+
+#     if df[mask].empty:
+#         st.error("❌ No active time slot found.")
+#     else:
+#         df.loc[mask, "current_location"] = location
+#         df.loc[mask, "status"] = status
+#         df.loc[mask, "remarks"] = remarks
+#         df.loc[mask, "last_updated"] = now_dt.strftime("%Y-%m-%d %H:%M")
+
+#         save_data(df)
+#         st.success("✅ Whereabout updated and saved (persistent).")
+
+
 if submit:
     mask = (
         (df["vehicle_id"] == vehicle) &
@@ -113,8 +132,18 @@ if submit:
         df.loc[mask, "remarks"] = remarks
         df.loc[mask, "last_updated"] = now_dt.strftime("%Y-%m-%d %H:%M")
 
+        # Save to database
         save_data(df)
-        st.success("✅ Whereabout updated and saved (persistent).")
+
+        # 🔁 RELOAD from database
+        df = load_data()
+
+        # Re-create time columns
+        df["time_start_dt"] = pd.to_datetime(df["time_start"], errors="coerce").dt.time
+        df["time_end_dt"] = pd.to_datetime(df["time_end"], errors="coerce").dt.time
+
+        st.success("✅ Whereabout updated and reflected in dashboard.")
+
 
 # -------------------------
 # AVAILABLE NOW
