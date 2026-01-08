@@ -49,19 +49,20 @@ now_str = now_dt.strftime("%H:%M")  # HH:MM string
 st.caption(f"🕒 Current Time (SG): **{now_str}**")
 
 # -------------------------
-# 1️⃣ UPLOAD DAILY SCHEDULE
+# 1️⃣ UPLOAD DAILY SCHEDULE (Excel)
 # -------------------------
-st.subheader("📤 Upload Today's Schedule (CSV)")
+st.subheader("📤 Upload Today's Schedule (Excel)")
 
 uploaded_file = st.file_uploader(
-    "Select CSV file",
-    type="csv",
+    "Select Excel file",
+    type=["xlsx"],
     help="Columns must include: vehicle_id, plate_no, driver, time_start, time_end, current_location, status, remarks"
 )
 
 if uploaded_file is not None:
     try:
-        new_df = pd.read_csv(uploaded_file)
+        # Read Excel
+        new_df = pd.read_excel(uploaded_file)
 
         # Ensure required columns exist
         required_cols = [
@@ -72,9 +73,9 @@ if uploaded_file is not None:
         ]
         missing_cols = [c for c in required_cols if c not in new_df.columns]
         if missing_cols:
-            st.error(f"Missing columns in CSV: {missing_cols}")
+            st.error(f"Missing columns in Excel: {missing_cols}")
         else:
-            # Normalize time
+            # Normalize time columns
             new_df["time_start"] = new_df["time_start"].astype(str).str.slice(0,5)
             new_df["time_end"] = new_df["time_end"].astype(str).str.slice(0,5)
 
@@ -87,7 +88,7 @@ if uploaded_file is not None:
             st.success("✅ Schedule uploaded and updated successfully!")
 
     except Exception as e:
-        st.error(f"Failed to upload CSV: {e}")
+        st.error(f"Failed to upload Excel: {e}")
 
 # -------------------------
 # LOAD CURRENT DATA
