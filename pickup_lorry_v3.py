@@ -54,6 +54,14 @@ st.caption(f"🕒 Current Time (SG): **{now_str}**")
 # -------------------------
 df = load_data()
 
+# # Immediately after loading data from SQLite
+# df = load_data()
+
+# Normalize times to HH:MM
+df["time_start"] = df["time_start"].str.slice(0,5)
+df["time_end"] = df["time_end"].str.slice(0,5)
+
+
 # -------------------------
 # DRIVER WHEREABOUT UPDATE
 # -------------------------
